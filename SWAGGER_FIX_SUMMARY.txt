@@ -1,0 +1,50 @@
+================================================================================
+            STOCKPRO SWAGGER AGGREGATION - FIX SUMMARY REPORT
+================================================================================
+
+STATUS: WORKING ✅
+DATE: 2026-04-25
+
+--------------------------------------------------------------------------------
+1. THE VERSION MISMATCH BUG (Major Root Cause)
+--------------------------------------------------------------------------------
+- Problem: Product and StockMovement services were on Spring Boot 3.5.x.
+- Impact: Security defaults in 3.4+ are much stricter, causing 403 Forbidden 
+  even on whitelisted paths like /v3/api-docs.
+- Fix: Downgraded all services to Spring Boot 3.2.5 to match working services.
+
+--------------------------------------------------------------------------------
+2. THE MISSING CONFIGURATION BUG (JSON Generation)
+--------------------------------------------------------------------------------
+- Problem: Individual services lacked SpringDoc properties in application.properties.
+- Impact: /v3/api-docs endpoint was not active, causing 404/403.
+- Fix: Added the following to ALL microservices:
+  springdoc.api-docs.path=/v3/api-docs
+  springdoc.swagger-ui.enabled=true
+
+--------------------------------------------------------------------------------
+3. THE SECURITY MATCHER BUG (Access Control)
+--------------------------------------------------------------------------------
+- Problem: Wildcard matchers like /v3/api-docs** were inconsistent.
+- Fix: Used explicit matchers in all SecurityConfig.java files:
+  .requestMatchers("/v3/api-docs", "/v3/api-docs/**").permitAll()
+
+--------------------------------------------------------------------------------
+4. THE GATEWAY ROUTING BUG (400 Bad Request)
+--------------------------------------------------------------------------------
+- Problem: RewritePath regex was too complex (/?(.*)) and predicate missing base paths.
+- Impact: Gateway forwarded malformed URLs that services couldn't parse.
+- Fix: Simplified Gateway application.yml routes:
+  - Path: Included both exact /auth/v3/api-docs AND wildcard /**
+  - Filter: Used 'RewritePath=/auth/(.*), /$1' with single quotes.
+
+--------------------------------------------------------------------------------
+5. THE CORS/CSRF CONFLICT
+--------------------------------------------------------------------------------
+- Problem: Service-level CORS was blocking Gateway-forwarded requests.
+- Fix: Disabled CORS/CSRF at service level; Gateway now handles all CORS.
+
+================================================================================
+FINAL ARCHITECTURE:
+Gateway (8080) -> Aggregates all /v3/api-docs -> Unified Swagger UI
+================================================================================

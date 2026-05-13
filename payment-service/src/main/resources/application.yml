@@ -1,0 +1,55 @@
+server:
+  port: ${SERVER_PORT}
+
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  application:
+    name: ${SPRING_APPLICATION_NAME}
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME}
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+    show-sql: ${SPRING_JPA_SHOW_SQL}
+    properties:
+      hibernate:
+        dialect: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    register-with-eureka: ${EUREKA_CLIENT_REGISTER_WITH_EUREKA}
+    fetch-registry: ${EUREKA_CLIENT_FETCH_REGISTRY}
+  instance:
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS}
+
+razorpay:
+  key-id: ${RAZORPAY_KEY_ID}
+  key-secret: ${RAZORPAY_KEY_SECRET}
+
+stockpro:
+  internal:
+    service-token: ${STOCKPRO_INTERNAL_SERVICE_TOKEN}
+  purchase-service:
+    base-url: ${PURCHASE_SERVICE_BASE_URL}
+    notify-enabled: ${PURCHASE_NOTIFY_ENABLED}
+
+springdoc:
+  api-docs:
+    path: ${SPRINGDOC_API_DOCS_PATH}
+  swagger-ui:
+    path: ${SPRINGDOC_SWAGGER_UI_PATH}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE}
+
+jwt:
+  secret: ${JWT_SECRET}

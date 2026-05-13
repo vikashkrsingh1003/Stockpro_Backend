@@ -1,0 +1,8 @@
+.metadata/
+target/
+node_modules/
+*.log
+.env
+.idea
+.SONARQUBE_JACOCO.md
+.SWAGGER_FIX_SUMMARY.txt

@@ -1,0 +1,355 @@
+# ============================================================
+# StockPro — Docker Compose
+# PDF §7 Containerisation: Docker with Docker Compose
+# Run from: e:\myproject\sprintproject\stockpro\
+# Command:  docker-compose up --build
+# ============================================================
+
+services:
+
+  # ──────────────────────────────────────
+  # INFRASTRUCTURE — MySQL & RabbitMQ
+  # No code needed — pulled from Docker Hub
+  # ──────────────────────────────────────
+
+  mysql:
+    image: mysql:8.0
+    container_name: stockpro-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - stockpro-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: stockpro-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - stockpro-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  sonarqube:
+    image: sonarqube:community
+    container_name: stockpro-sonarqube
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks:
+      - stockpro-network
+
+  # ──────────────────────────────────────
+  # SERVICE DISCOVERY — Eureka (starts first)
+  # ──────────────────────────────────────
+
+  eureka-service:
+    build: ./eureka-service
+    container_name: stockpro-eureka
+    restart: unless-stopped
+    env_file:
+      - ./eureka-service/.env
+    ports:
+      - "8761:8761"
+    networks:
+      - stockpro-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # ──────────────────────────────────────
+  # BACKEND MICROSERVICES
+  # ──────────────────────────────────────
+
+  authservice:
+    build: ./authservice
+    container_name: stockpro-auth
+    restart: unless-stopped
+    env_file:
+      - ./authservice/.env
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - STOCKPRO_ALERT_LOW_STOCK_THRESHOLD=20
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+    networks:
+      - stockpro-network
+
+  product-service:
+    build: ./product-service
+    container_name: stockpro-product
+    restart: unless-stopped
+    env_file:
+      - ./product-service/.env
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_product?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+    networks:
+      - stockpro-network
+
+  warehouse-service:
+    build: ./warehouse-service
+    container_name: stockpro-warehouse
+    restart: unless-stopped
+    env_file:
+      - ./warehouse-service/.env
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_warehouse_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+    networks:
+      - stockpro-network
+
+  purchase-service:
+    build: ./purchase-service
+    container_name: stockpro-purchase
+    restart: unless-stopped
+    env_file:
+      - ./purchase-service/.env
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_purchase_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - STOCKPRO_INTERNAL_SERVICE_TOKEN=stockpro-internal-token
+      - PAYMENT_SERVICE_BASE_URL=http://payment-service:8089/api/v1/payments
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - stockpro-network
+
+  payment-service:
+    build: ./payment-service
+    container_name: stockpro-payment
+    restart: unless-stopped
+    env_file:
+      - ./payment-service/.env
+    ports:
+      - "8089:8089"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_payment_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - STOCKPRO_INTERNAL_SERVICE_TOKEN=stockpro-internal-token
+      - PURCHASE_SERVICE_BASE_URL=http://purchase-service:8084/api/v1/purchase-orders
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+      purchase-service:
+        condition: service_started
+    networks:
+      - stockpro-network
+
+  supplier-service:
+    build: ./supplier-service
+    container_name: stockpro-supplier
+    restart: unless-stopped
+    env_file:
+      - ./supplier-service/.env
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_supplier?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+    networks:
+      - stockpro-network
+
+  stockmovement-services:
+    build: ./stockmovement-services
+    container_name: stockpro-movement
+    restart: unless-stopped
+    env_file:
+      - ./stockmovement-services/.env
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_movements?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - STOCKPRO_ALERT_EMAIL_TO=vksingh1062003@gmail.com
+      - STOCKPRO_INTERNAL_SERVICE_TOKEN=stockpro-internal-token
+      - PAYMENT_SERVICE_BASE_URL=http://payment-service:8089/api/v1/payments
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - stockpro-network
+
+  analytics-service:
+    build: ./analytics-service
+    container_name: stockpro-analytics
+    restart: unless-stopped
+    env_file:
+      - ./analytics-service/.env
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_analytics_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+    networks:
+      - stockpro-network
+
+  alert-service:
+    build: ./alert-service
+    container_name: stockpro-alert
+    restart: unless-stopped
+    env_file:
+      - ./alert-service/.env
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_alert_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - stockpro-network
+
+  # ──────────────────────────────────────
+  # API GATEWAY — Entry point for all requests
+  # ──────────────────────────────────────
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: stockpro-gateway
+    restart: unless-stopped
+    env_file:
+      - ./api-gateway/.env
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+    depends_on:
+      eureka-service:
+        condition: service_healthy
+    networks:
+      - stockpro-network
+
+  # ──────────────────────────────────────
+  # FRONTEND — React/Vite served via Nginx
+  # Path goes up one level to stockproFrontend
+  # ──────────────────────────────────────
+
+  frontend:
+    build: ../stockproFrontend/stockProFrontend
+    container_name: stockpro-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - stockpro-network
+
+# ──────────────────────────────────────
+# VOLUMES & NETWORKS
+# ──────────────────────────────────────
+
+volumes:
+  mysql_data:
+    driver: local
+  sonarqube_data:
+    driver: local
+  sonarqube_extensions:
+    driver: local
+  sonarqube_logs:
+    driver: local
+
+networks:
+  stockpro-network:
+    driver: bridge

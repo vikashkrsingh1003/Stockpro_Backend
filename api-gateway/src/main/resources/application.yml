@@ -1,0 +1,183 @@
+server:
+  port: ${SERVER_PORT}
+
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  application:
+    name: ${SPRING_APPLICATION_NAME}
+
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - ${GATEWAY_CORS_ALLOWED_ORIGIN_1}
+              - ${GATEWAY_CORS_ALLOWED_ORIGIN_2}
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        - id: auth-service
+          uri: ${GATEWAY_ROUTE_AUTH_URI}
+          predicates:
+            - Path=/api/v1/auth/**
+
+        - id: auth-service-oauth2
+          uri: ${GATEWAY_ROUTE_AUTH_URI}
+          predicates:
+            - Path=/oauth2/**,/login/oauth2/**
+
+        - id: product-service
+          uri: ${GATEWAY_ROUTE_PRODUCT_URI}
+          predicates:
+            - Path=/api/v1/products/**
+
+        - id: warehouse-service
+          uri: ${GATEWAY_ROUTE_WAREHOUSE_URI}
+          predicates:
+            - Path=/api/v1/warehouses/**
+
+        # Supplier Service
+        - id: supplier-service
+          uri: ${GATEWAY_ROUTE_SUPPLIER_URI}
+          predicates:
+            - Path=/api/v1/suppliers/**
+
+        # Stock Movement Service
+        - id: stockmovement-services
+          uri: ${GATEWAY_ROUTE_MOVEMENT_URI}
+          predicates:
+            - Path=/api/v1/movements/**,/api/v1/movements
+
+        # Purchase Service
+        - id: purchase-service
+          uri: ${GATEWAY_ROUTE_PURCHASE_URI}
+          predicates:
+            - Path=/api/v1/purchase-orders/**
+
+        # Payment Service
+        - id: payment-service
+          uri: ${GATEWAY_ROUTE_PAYMENT_URI}
+          predicates:
+            - Path=/api/v1/payments/**
+
+        # Analytics Service
+        - id: analytics-service
+          uri: ${GATEWAY_ROUTE_ANALYTICS_URI}
+          predicates:
+            - Path=/api/v1/analytics/**
+
+        # Alert Service
+        - id: alert-service
+          uri: ${GATEWAY_ROUTE_ALERT_URI}
+          predicates:
+            - Path=/api/v1/alerts,/api/v1/alerts/**
+
+        # Swagger Docs Aggregation Routes
+        - id: auth-docs
+          uri: ${GATEWAY_ROUTE_AUTH_URI}
+          predicates:
+            - Path=/auth/v3/api-docs, /auth/v3/api-docs/**
+          filters:
+            - 'RewritePath=/auth/(.*), /$1'
+
+        - id: product-docs
+          uri: ${GATEWAY_ROUTE_PRODUCT_URI}
+          predicates:
+            - Path=/product/v3/api-docs, /product/v3/api-docs/**
+          filters:
+            - 'RewritePath=/product/(.*), /$1'
+
+        - id: warehouse-docs
+          uri: ${GATEWAY_ROUTE_WAREHOUSE_URI}
+          predicates:
+            - Path=/warehouse/v3/api-docs, /warehouse/v3/api-docs/**
+          filters:
+            - 'RewritePath=/warehouse/(.*), /$1'
+
+        - id: supplier-docs
+          uri: ${GATEWAY_ROUTE_SUPPLIER_URI}
+          predicates:
+            - Path=/supplier/v3/api-docs, /supplier/v3/api-docs/**
+          filters:
+            - 'RewritePath=/supplier/(.*), /$1'
+
+        - id: movement-docs
+          uri: ${GATEWAY_ROUTE_MOVEMENT_URI}
+          predicates:
+            - Path=/movement/v3/api-docs, /movement/v3/api-docs/**
+          filters:
+            - 'RewritePath=/movement/(.*), /$1'
+
+        - id: purchase-docs
+          uri: ${GATEWAY_ROUTE_PURCHASE_URI}
+          predicates:
+            - Path=/purchase/v3/api-docs, /purchase/v3/api-docs/**
+          filters:
+            - 'RewritePath=/purchase/(.*), /$1'
+
+        - id: payment-docs
+          uri: ${GATEWAY_ROUTE_PAYMENT_URI}
+          predicates:
+            - Path=/payment/v3/api-docs, /payment/v3/api-docs/**
+          filters:
+            - 'RewritePath=/payment/(.*), /$1'
+
+        - id: analytics-docs
+          uri: ${GATEWAY_ROUTE_ANALYTICS_URI}
+          predicates:
+            - Path=/analytics/v3/api-docs, /analytics/v3/api-docs/**
+          filters:
+            - 'RewritePath=/analytics/(.*), /$1'
+
+        - id: alert-docs
+          uri: ${GATEWAY_ROUTE_ALERT_URI}
+          predicates:
+            - Path=/alert/v3/api-docs, /alert/v3/api-docs/**
+          filters:
+            - 'RewritePath=/alert/(.*), /$1'
+
+springdoc:
+  swagger-ui:
+    path: ${SPRINGDOC_SWAGGER_UI_PATH}
+    urls:
+      - name: Auth Service
+        url: /auth/v3/api-docs
+      - name: Product Service
+        url: /product/v3/api-docs
+      - name: Warehouse Service
+        url: /warehouse/v3/api-docs
+      - name: Supplier Service
+        url: /supplier/v3/api-docs
+      - name: Movement Service
+        url: /movement/v3/api-docs
+      - name: Purchase Service
+        url: /purchase/v3/api-docs
+      - name: Payment Service
+        url: /payment/v3/api-docs
+      - name: Analytics Service
+        url: /analytics/v3/api-docs
+      - name: Alert Service
+        url: /alert/v3/api-docs
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    register-with-eureka: ${EUREKA_CLIENT_REGISTER_WITH_EUREKA}
+    fetch-registry: ${EUREKA_CLIENT_FETCH_REGISTRY}
+  instance:
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE}
