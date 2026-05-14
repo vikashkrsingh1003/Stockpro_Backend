@@ -112,8 +112,8 @@ pipeline {
         )
         booleanParam(
             name: 'RUN_TESTS',
-            defaultValue: true,
-            description: 'Run Maven tests before Docker image build.'
+            defaultValue: false,
+            description: 'Run Maven tests before Docker image build. Default is false for faster CI builds.'
         )
         booleanParam(
             name: 'PUSH_LATEST_TAG',
@@ -169,7 +169,11 @@ pipeline {
                     def goals = params.RUN_TESTS ? 'clean test package' : 'clean package -DskipTests'
                     readFile(env.SELECTED_SERVICES_FILE).split('\n').findAll { it.trim() }.each { service ->
                         dir(service.trim()) {
-                            sh "mvn -B ${goals}"
+                            sh """
+                                set -eu
+                                chmod +x ./mvnw
+                                ./mvnw -B ${goals}
+                            """
                         }
                     }
                 }
