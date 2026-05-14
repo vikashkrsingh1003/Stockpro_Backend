@@ -171,6 +171,10 @@ pipeline {
                         dir(service.trim()) {
                             sh """
                                 set -eu
+                                if [ ! -f ./mvnw ]; then
+                                  cp ../eureka-service/mvnw ./mvnw
+                                  cp -R ../eureka-service/.mvn ./.mvn
+                                fi
                                 chmod +x ./mvnw
                                 ./mvnw -B ${goals}
                             """
