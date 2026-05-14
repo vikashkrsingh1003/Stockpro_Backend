@@ -1,0 +1,48 @@
+# Production image override.
+# Use with:
+# docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
+
+services:
+  eureka-service:
+    image: ${DOCKERHUB_NAMESPACE}/stockpro-eureka-service:${IMAGE_TAG:-latest}
+    pull_policy: always
+
+  api-gateway:
+    image: ${DOCKERHUB_NAMESPACE}/stockpro-api-gateway:${IMAGE_TAG:-latest}
+    pull_policy: always
+
+  authservice:
+    image: ${DOCKERHUB_NAMESPACE}/stockpro-authservice:${IMAGE_TAG:-latest}
+    pull_policy: always
+
+  product-service:
+    image: ${DOCKERHUB_NAMESPACE}/stockpro-product-service:${IMAGE_TAG:-latest}
+    pull_policy: always
+
+  warehouse-service:
+    image: ${DOCKERHUB_NAMESPACE}/stockpro-warehouse-service:${IMAGE_TAG:-latest}
+    pull_policy: always
+
+  purchase-service:
+    image: ${DOCKERHUB_NAMESPACE}/stockpro-purchase-service:${IMAGE_TAG:-latest}
+    pull_policy: always
+
+  payment-service:
+    image: ${DOCKERHUB_NAMESPACE}/stockpro-payment-service:${IMAGE_TAG:-latest}
+    pull_policy: always
+
+  supplier-service:
+    image: ${DOCKERHUB_NAMESPACE}/stockpro-supplier-service:${IMAGE_TAG:-latest}
+    pull_policy: always
+
+  stockmovement-services:
+    image: ${DOCKERHUB_NAMESPACE}/stockpro-stockmovement-services:${IMAGE_TAG:-latest}
+    pull_policy: always
+
+  analytics-service:
+    image: ${DOCKERHUB_NAMESPACE}/stockpro-analytics-service:${IMAGE_TAG:-latest}
+    pull_policy: always
+
+  alert-service:
+    image: ${DOCKERHUB_NAMESPACE}/stockpro-alert-service:${IMAGE_TAG:-latest}
+    pull_policy: always

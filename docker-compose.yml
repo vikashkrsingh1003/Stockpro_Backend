@@ -5,6 +5,18 @@
 # Command:  docker-compose up --build
 # ============================================================
 
+x-memory-small: &memory-small
+  mem_limit: 256m
+  memswap_limit: 256m
+
+x-memory-medium: &memory-medium
+  mem_limit: 288m
+  memswap_limit: 288m
+
+x-memory-large: &memory-large
+  mem_limit: 320m
+  memswap_limit: 320m
+
 services:
 
   # ──────────────────────────────────────
@@ -15,7 +27,19 @@ services:
   mysql:
     image: mysql:8.0
     container_name: stockpro-mysql
+    profiles:
+      - local-db
     restart: unless-stopped
+    mem_limit: 384m
+    memswap_limit: 384m
+    command:
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=50
+      - --performance-schema=OFF
+      - --table-open-cache=200
+      - --key-buffer-size=8M
+      - --tmp-table-size=32M
+      - --max-heap-table-size=32M
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -27,7 +51,7 @@ services:
     networks:
       - stockpro-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -36,16 +60,19 @@ services:
     image: rabbitmq:3-management
     container_name: stockpro-rabbitmq
     restart: unless-stopped
+    mem_limit: 256m
+    memswap_limit: 256m
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.60
     networks:
       - stockpro-network
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -53,7 +80,11 @@ services:
   sonarqube:
     image: sonarqube:community
     container_name: stockpro-sonarqube
+    profiles:
+      - tools
     restart: unless-stopped
+    mem_limit: 1536m
+    memswap_limit: 1536m
     ports:
       - "9000:9000"
     environment:
@@ -70,6 +101,7 @@ services:
   # ──────────────────────────────────────
 
   eureka-service:
+    <<: *memory-small
     build: ./eureka-service
     container_name: stockpro-eureka
     restart: unless-stopped
@@ -80,7 +112,7 @@ services:
     networks:
       - stockpro-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8761/actuator/health" ]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -90,6 +122,7 @@ services:
   # ──────────────────────────────────────
 
   authservice:
+    <<: *memory-small
     build: ./authservice
     container_name: stockpro-auth
     restart: unless-stopped
@@ -98,20 +131,23 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=4
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=1
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
       - STOCKPRO_ALERT_LOW_STOCK_THRESHOLD=20
+      - SERVER_TOMCAT_THREADS_MAX=50
+      - SERVER_TOMCAT_THREADS_MIN_SPARE=5
     depends_on:
-      mysql:
-        condition: service_healthy
       eureka-service:
         condition: service_healthy
     networks:
       - stockpro-network
 
   product-service:
+    <<: *memory-small
     build: ./product-service
     container_name: stockpro-product
     restart: unless-stopped
@@ -120,19 +156,22 @@ services:
     ports:
       - "8082:8082"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_product?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_product?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=4
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=1
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - SERVER_TOMCAT_THREADS_MAX=50
+      - SERVER_TOMCAT_THREADS_MIN_SPARE=5
     depends_on:
-      mysql:
-        condition: service_healthy
       eureka-service:
         condition: service_healthy
     networks:
       - stockpro-network
 
   warehouse-service:
+    <<: *memory-small
     build: ./warehouse-service
     container_name: stockpro-warehouse
     restart: unless-stopped
@@ -141,19 +180,22 @@ services:
     ports:
       - "8083:8083"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_warehouse_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_warehouse_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=4
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=1
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - SERVER_TOMCAT_THREADS_MAX=50
+      - SERVER_TOMCAT_THREADS_MIN_SPARE=5
     depends_on:
-      mysql:
-        condition: service_healthy
       eureka-service:
         condition: service_healthy
     networks:
       - stockpro-network
 
   purchase-service:
+    <<: *memory-medium
     build: ./purchase-service
     container_name: stockpro-purchase
     restart: unless-stopped
@@ -162,17 +204,19 @@ services:
     ports:
       - "8084:8084"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_purchase_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_purchase_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=4
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=1
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
       - STOCKPRO_INTERNAL_SERVICE_TOKEN=stockpro-internal-token
       - PAYMENT_SERVICE_BASE_URL=http://payment-service:8089/api/v1/payments
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
+      - SERVER_TOMCAT_THREADS_MAX=50
+      - SERVER_TOMCAT_THREADS_MIN_SPARE=5
     depends_on:
-      mysql:
-        condition: service_healthy
       eureka-service:
         condition: service_healthy
       rabbitmq:
@@ -181,6 +225,7 @@ services:
       - stockpro-network
 
   payment-service:
+    <<: *memory-small
     build: ./payment-service
     container_name: stockpro-payment
     restart: unless-stopped
@@ -189,15 +234,17 @@ services:
     ports:
       - "8089:8089"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_payment_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_payment_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=4
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=1
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
       - STOCKPRO_INTERNAL_SERVICE_TOKEN=stockpro-internal-token
       - PURCHASE_SERVICE_BASE_URL=http://purchase-service:8084/api/v1/purchase-orders
+      - SERVER_TOMCAT_THREADS_MAX=50
+      - SERVER_TOMCAT_THREADS_MIN_SPARE=5
     depends_on:
-      mysql:
-        condition: service_healthy
       eureka-service:
         condition: service_healthy
       purchase-service:
@@ -206,6 +253,7 @@ services:
       - stockpro-network
 
   supplier-service:
+    <<: *memory-small
     build: ./supplier-service
     container_name: stockpro-supplier
     restart: unless-stopped
@@ -214,19 +262,22 @@ services:
     ports:
       - "8085:8085"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_supplier?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_supplier?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=4
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=1
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - SERVER_TOMCAT_THREADS_MAX=50
+      - SERVER_TOMCAT_THREADS_MIN_SPARE=5
     depends_on:
-      mysql:
-        condition: service_healthy
       eureka-service:
         condition: service_healthy
     networks:
       - stockpro-network
 
   stockmovement-services:
+    <<: *memory-medium
     build: ./stockmovement-services
     container_name: stockpro-movement
     restart: unless-stopped
@@ -235,18 +286,20 @@ services:
     ports:
       - "8086:8086"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_movements?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_movements?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=4
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=1
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
       - STOCKPRO_ALERT_EMAIL_TO=vksingh1062003@gmail.com
       - STOCKPRO_INTERNAL_SERVICE_TOKEN=stockpro-internal-token
       - PAYMENT_SERVICE_BASE_URL=http://payment-service:8089/api/v1/payments
+      - SERVER_TOMCAT_THREADS_MAX=50
+      - SERVER_TOMCAT_THREADS_MIN_SPARE=5
     depends_on:
-      mysql:
-        condition: service_healthy
       eureka-service:
         condition: service_healthy
       rabbitmq:
@@ -255,6 +308,7 @@ services:
       - stockpro-network
 
   analytics-service:
+    <<: *memory-large
     build: ./analytics-service
     container_name: stockpro-analytics
     restart: unless-stopped
@@ -263,19 +317,22 @@ services:
     ports:
       - "8087:8087"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_analytics_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_analytics_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=4
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=1
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - SERVER_TOMCAT_THREADS_MAX=50
+      - SERVER_TOMCAT_THREADS_MIN_SPARE=5
     depends_on:
-      mysql:
-        condition: service_healthy
       eureka-service:
         condition: service_healthy
     networks:
       - stockpro-network
 
   alert-service:
+    <<: *memory-small
     build: ./alert-service
     container_name: stockpro-alert
     restart: unless-stopped
@@ -284,15 +341,17 @@ services:
     ports:
       - "8088:8088"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/stockpro_alert_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_alert_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=4
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=1
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
+      - SERVER_TOMCAT_THREADS_MAX=50
+      - SERVER_TOMCAT_THREADS_MIN_SPARE=5
     depends_on:
-      mysql:
-        condition: service_healthy
       eureka-service:
         condition: service_healthy
       rabbitmq:
@@ -305,6 +364,7 @@ services:
   # ──────────────────────────────────────
 
   api-gateway:
+    <<: *memory-large
     build: ./api-gateway
     container_name: stockpro-gateway
     restart: unless-stopped
@@ -319,26 +379,25 @@ services:
         condition: service_healthy
     networks:
       - stockpro-network
-
   # ──────────────────────────────────────
-  # FRONTEND — React/Vite served via Nginx
+  # FRONTEND —
   # Path goes up one level to stockproFrontend
   # ──────────────────────────────────────
 
-  frontend:
-    build: ../stockproFrontend/stockProFrontend
-    container_name: stockpro-frontend
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    depends_on:
-      - api-gateway
-    networks:
-      - stockpro-network
+  # frontend:
+  #   build: ../stockproFrontend/stockProFrontend
+  #   container_name: stockpro-frontend
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - api-gateway
+  #   networks:
+  #     - stockpro-network
 
-# ──────────────────────────────────────
-# VOLUMES & NETWORKS
-# ──────────────────────────────────────
+  # ──────────────────────────────────────
+  # VOLUMES & NETWORKS
+  # ──────────────────────────────────────
 
 volumes:
   mysql_data:

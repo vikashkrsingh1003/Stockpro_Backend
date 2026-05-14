@@ -1,8 +1,24 @@
-.metadata/
+# Build & dependency directories
 target/
 node_modules/
-*.log
+dist/
+.angular/
+out-tsc/
+
+# Environment files
 .env
-.idea
+
+# IDE files
+.idea/
+
+# Logs
+*.log
+
+# Metadata / generated docs
+.metadata/
 .SONARQUBE_JACOCO.md
 .SWAGGER_FIX_SUMMARY.txt
+
+# Private keys
+*.pem
+stockpro-key.pem

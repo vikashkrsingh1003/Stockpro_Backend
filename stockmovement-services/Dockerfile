@@ -7,5 +7,6 @@ RUN apk add --no-cache maven && mvn clean package -DskipTests
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
+ENV JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:+UseSerialGC -Xms64m -Xmx160m -Xss512k -XX:MaxMetaspaceSize=112m -XX:ReservedCodeCacheSize=32m -XX:MaxDirectMemorySize=32m -XX:+ExitOnOutOfMemoryError"
 EXPOSE 8086
 ENTRYPOINT ["java", "-jar", "app.jar"]
