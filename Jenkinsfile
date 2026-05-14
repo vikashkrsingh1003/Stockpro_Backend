@@ -46,10 +46,6 @@ def shellQuote(String value) {
     return "'${value.replace("'", "'\"'\"'")}'"
 }
 
-def shellJoin(Collection values) {
-    return values.collect { shellQuote(it.toString()) }.join(' ')
-}
-
 pipeline {
     agent any
 
@@ -62,8 +58,8 @@ pipeline {
     parameters {
         choice(
             name: 'PIPELINE_ACTION',
-            choices: ['build_push_deploy', 'build_push_only', 'deploy_only'],
-            description: 'Build/push Docker Hub images, deploy EC2, or do both.'
+            choices: ['build_push_only'],
+            description: 'Build services and push Docker Hub images. EC2 deployment is manual.'
         )
         choice(
             name: 'SERVICE_SCOPE',
@@ -110,26 +106,6 @@ pipeline {
             defaultValue: '',
             description: 'AWS RDS password. Required for deploy actions.'
         )
-        string(
-            name: 'EC2_HOST',
-            defaultValue: '13.232.138.180',
-            description: 'EC2 public IP or DNS name. Required for deploy actions.'
-        )
-        string(
-            name: 'EC2_USER',
-            defaultValue: 'ubuntu',
-            description: 'SSH user for EC2, for example ubuntu or ec2-user.'
-        )
-        string(
-            name: 'EC2_SSH_CREDENTIALS_ID',
-            defaultValue: 'stockpro-ec2-ssh-key',
-            description: 'Jenkins SSH private key credential ID for EC2.'
-        )
-        string(
-            name: 'DEPLOY_PATH',
-            defaultValue: '/home/ubuntu/stockpro-backend',
-            description: 'Directory on EC2 where Compose/env files will live.'
-        )
         booleanParam(
             name: 'RUN_TESTS',
             defaultValue: false,
@@ -140,22 +116,11 @@ pipeline {
             defaultValue: true,
             description: 'Also push/update the latest tag when IMAGE_TAG is not latest.'
         )
-        booleanParam(
-            name: 'SYNC_ENV_FILES',
-            defaultValue: true,
-            description: 'Upload .env files to EC2. Set false only when env files are already managed on EC2.'
-        )
-        booleanParam(
-            name: 'PRUNE_DOCKER',
-            defaultValue: false,
-            description: 'Remove unused Docker images on EC2 after deployment.'
-        )
     }
 
     environment {
         COMPOSE_PROJECT_NAME = 'stockpro'
         SELECTED_SERVICES_FILE = '.jenkins-selected-services'
-        DEPLOY_BUNDLE = 'stockpro-deploy-bundle.tgz'
     }
 
     stages {
@@ -219,9 +184,6 @@ MYSQL_DATABASE=auth_db
         }
 
         stage('Build and Test Services') {
-            when {
-                expression { params.PIPELINE_ACTION != 'deploy_only' }
-            }
             steps {
                 script {
                     def goals = params.RUN_TESTS ? 'clean test package' : 'clean package -DskipTests'
@@ -253,9 +215,6 @@ MYSQL_DATABASE=auth_db
         }
 
         stage('Build and Push Docker Images') {
-            when {
-                expression { params.PIPELINE_ACTION != 'deploy_only' }
-            }
             steps {
                 script {
                     withCredentials([usernamePassword(
@@ -289,86 +248,6 @@ MYSQL_DATABASE=auth_db
                         }
 
                         sh 'docker logout'
-                    }
-                }
-            }
-        }
-
-        stage('Create EC2 Deploy Bundle') {
-            when {
-                expression { params.PIPELINE_ACTION != 'build_push_only' }
-            }
-            steps {
-                script {
-                    def envExcludeArgs = params.SYNC_ENV_FILES ? "--exclude='.jenkins-never-match'" : "--exclude='.env' --exclude='*/.env'"
-                    sh """
-                        set -eu
-                        rm -f ${shellQuote(env.DEPLOY_BUNDLE)}
-                        tar \\
-                          --exclude='.git' \\
-                          --exclude='**/src' \\
-                          --exclude='**/target' \\
-                          --exclude='**/Dockerfile' \\
-                          --exclude='**/pom.xml' \\
-                          --exclude='.jenkins-selected-services' \\
-                          --exclude='stockpro-key.pem' \\
-                          ${envExcludeArgs} \\
-                          -czf ${shellQuote(env.DEPLOY_BUNDLE)} \\
-                          .env docker-compose.yml docker-compose.prod.yml init-db.sql \\
-                          eureka-service api-gateway authservice product-service warehouse-service \\
-                          purchase-service payment-service supplier-service stockmovement-services \\
-                          analytics-service alert-service
-                    """
-                }
-            }
-        }
-
-        stage('Deploy to EC2') {
-            when {
-                expression { params.PIPELINE_ACTION != 'build_push_only' }
-            }
-            steps {
-                script {
-                    if (!params.EC2_HOST?.trim()) {
-                        error('EC2_HOST is required for deploy actions.')
-                    }
-
-                    def deployPath = params.DEPLOY_PATH.trim()
-                    def remote = "${params.EC2_USER.trim()}@${params.EC2_HOST.trim()}"
-                    def selectedServices = readFile(env.SELECTED_SERVICES_FILE).split('\n').findAll { it.trim() }.collect { it.trim() }
-                    def quotedDeployPath = shellQuote(deployPath)
-                    def quotedProjectName = shellQuote(env.COMPOSE_PROJECT_NAME)
-                    def quotedNamespace = shellQuote(env.DOCKERHUB_NAMESPACE_VALUE)
-                    def quotedImageTag = shellQuote(env.IMAGE_TAG_VALUE)
-                    def quotedRdsEndpoint = shellQuote(env.RDS_ENDPOINT_VALUE)
-                    def quotedRdsPort = shellQuote(env.RDS_PORT_VALUE)
-                    def quotedRdsUsername = shellQuote(env.RDS_USERNAME_VALUE)
-                    def quotedRdsPassword = shellQuote(env.RDS_PASSWORD_VALUE)
-                    def quotedServices = shellJoin(selectedServices)
-                    def pruneCommand = params.PRUNE_DOCKER ? 'docker image prune -f' : 'true'
-
-                    sshagent(credentials: [params.EC2_SSH_CREDENTIALS_ID]) {
-                        sh """
-                            set -eu
-                            ssh -o StrictHostKeyChecking=no ${remote} "mkdir -p ${quotedDeployPath}"
-                            scp -o StrictHostKeyChecking=no ${shellQuote(env.DEPLOY_BUNDLE)} ${remote}:${quotedDeployPath}/
-
-                            ssh -o StrictHostKeyChecking=no ${remote} "cd ${quotedDeployPath} && \\
-                              tar -xzf ${shellQuote(env.DEPLOY_BUNDLE)} && \\
-                              rm -f ${shellQuote(env.DEPLOY_BUNDLE)} && \\
-                              export COMPOSE_PROJECT_NAME=${quotedProjectName} && \\
-                              export DOCKERHUB_NAMESPACE=${quotedNamespace} && \\
-                              export IMAGE_TAG=${quotedImageTag} && \\
-                              export RDS_ENDPOINT=${quotedRdsEndpoint} && \\
-                              export RDS_PORT=${quotedRdsPort} && \\
-                              export RDS_USERNAME=${quotedRdsUsername} && \\
-                              export RDS_PASSWORD=${quotedRdsPassword} && \\
-                              docker compose -f docker-compose.yml -f docker-compose.prod.yml config >/dev/null && \\
-                              docker compose -f docker-compose.yml -f docker-compose.prod.yml pull ${quotedServices} && \\
-                              docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build ${quotedServices} && \\
-                              docker compose -f docker-compose.yml -f docker-compose.prod.yml ps && \\
-                              ${pruneCommand}"
-                        """
                     }
                 }
             }
