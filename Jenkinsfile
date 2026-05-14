@@ -258,7 +258,16 @@ MYSQL_DATABASE=auth_db
             }
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', params.DOCKERHUB_CREDENTIALS_ID) {
+                    withCredentials([usernamePassword(
+                        credentialsId: params.DOCKERHUB_CREDENTIALS_ID,
+                        usernameVariable: 'DOCKERHUB_USERNAME',
+                        passwordVariable: 'DOCKERHUB_PASSWORD'
+                    )]) {
+                        sh '''
+                            set -eu
+                            printf '%s' "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                        '''
+
                         readFile(env.SELECTED_SERVICES_FILE).split('\n').findAll { it.trim() }.each { serviceName ->
                             def service = serviceName.trim()
                             def image = dockerImageName(env.DOCKERHUB_NAMESPACE_VALUE, service)
@@ -278,6 +287,8 @@ MYSQL_DATABASE=auth_db
                                 """
                             }
                         }
+
+                        sh 'docker logout'
                     }
                 }
             }
