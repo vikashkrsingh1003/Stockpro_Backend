@@ -86,66 +86,6 @@ pipeline {
             defaultValue: 'latest',
             description: 'Image tag to deploy. Use latest for normal deployments.'
         )
-        string(
-            name: 'RDS_ENDPOINT',
-            defaultValue: 'stockpro-db.cv2k06sm0z9c.ap-south-1.rds.amazonaws.com',
-            description: 'AWS RDS endpoint used by Docker Compose.'
-        )
-        string(
-            name: 'RDS_PORT',
-            defaultValue: '3306',
-            description: 'AWS RDS MySQL port.'
-        )
-        string(
-            name: 'RDS_USERNAME',
-            defaultValue: 'admin',
-            description: 'AWS RDS username.'
-        )
-        password(
-            name: 'RDS_PASSWORD',
-            defaultValue: '',
-            description: 'AWS RDS password. Required for deploy actions.'
-        )
-        password(
-            name: 'JWT_SECRET',
-            defaultValue: '',
-            description: 'JWT signing secret for generated runtime .env.'
-        )
-        string(
-            name: 'GOOGLE_CLIENT_ID',
-            defaultValue: '',
-            description: 'Google OAuth client ID for generated runtime .env.'
-        )
-        password(
-            name: 'GOOGLE_CLIENT_SECRET',
-            defaultValue: '',
-            description: 'Google OAuth client secret for generated runtime .env.'
-        )
-        string(
-            name: 'STOCKPRO_MAIL_USERNAME',
-            defaultValue: '',
-            description: 'SMTP username for generated runtime .env.'
-        )
-        password(
-            name: 'STOCKPRO_MAIL_PASSWORD',
-            defaultValue: '',
-            description: 'SMTP app password for generated runtime .env.'
-        )
-        string(
-            name: 'STOCKPRO_ALERT_EMAIL_TO',
-            defaultValue: '',
-            description: 'Alert notification email recipient for generated runtime .env.'
-        )
-        string(
-            name: 'RAZORPAY_KEY_ID',
-            defaultValue: '',
-            description: 'Razorpay key ID for generated runtime .env.'
-        )
-        password(
-            name: 'RAZORPAY_KEY_SECRET',
-            defaultValue: '',
-            description: 'Razorpay key secret for generated runtime .env.'
-        )
         booleanParam(
             name: 'RUN_TESTS',
             defaultValue: false,
@@ -175,10 +115,6 @@ pipeline {
                     env.SELECTED_SERVICES = selected.join(' ')
                     env.DOCKERHUB_NAMESPACE_VALUE = params.DOCKERHUB_NAMESPACE.trim()
                     env.IMAGE_TAG_VALUE = params.IMAGE_TAG.trim() ?: 'latest'
-                    env.RDS_ENDPOINT_VALUE = params.RDS_ENDPOINT.trim()
-                    env.RDS_PORT_VALUE = params.RDS_PORT.trim() ?: '3306'
-                    env.RDS_USERNAME_VALUE = params.RDS_USERNAME.trim()
-                    env.RDS_PASSWORD_VALUE = params.RDS_PASSWORD
                     writeFile(file: env.SELECTED_SERVICES_FILE, text: selected.join('\n') + '\n')
 
                     echo "Pipeline action: ${params.PIPELINE_ACTION}"
@@ -192,26 +128,18 @@ pipeline {
         stage('Prepare Runtime Env Files') {
             steps {
                 script {
-                    if (!env.RDS_ENDPOINT_VALUE?.trim()) {
-                        error('RDS_ENDPOINT is required.')
-                    }
-                    if (!env.RDS_USERNAME_VALUE?.trim()) {
-                        error('RDS_USERNAME is required.')
-                    }
-                    if (!env.RDS_PASSWORD_VALUE?.trim()) {
-                        error('RDS_PASSWORD is required.')
-                    }
-
                     writeFile(
                         file: '.env',
-                        text: """RDS_ENDPOINT=${env.RDS_ENDPOINT_VALUE}
-RDS_PORT=${env.RDS_PORT_VALUE}
-RDS_USERNAME=${env.RDS_USERNAME_VALUE}
-RDS_PASSWORD=${env.RDS_PASSWORD_VALUE}
-MYSQL_ROOT_PASSWORD=${env.RDS_PASSWORD_VALUE}
+                        text: """# CI-only placeholder values for docker compose config validation.
+# Runtime secrets live only in the EC2 root .env file.
+RDS_ENDPOINT=localhost
+RDS_PORT=3306
+RDS_USERNAME=jenkins
+RDS_PASSWORD=jenkins
+MYSQL_ROOT_PASSWORD=jenkins
 MYSQL_DATABASE=auth_db
 
-JWT_SECRET=${params.JWT_SECRET}
+JWT_SECRET=jenkins-placeholder
 JWT_EXPIRATION=28800000
 
 SERVER_FORWARD_HEADERS_STRATEGY=framework
@@ -248,8 +176,8 @@ SPRINGDOC_API_DOCS_PATH=/v3/api-docs
 SPRINGDOC_SWAGGER_UI_PATH=/swagger-ui.html
 SPRINGDOC_SWAGGER_UI_ENABLED=true
 
-GOOGLE_CLIENT_ID=${params.GOOGLE_CLIENT_ID}
-GOOGLE_CLIENT_SECRET=${params.GOOGLE_CLIENT_SECRET}
+GOOGLE_CLIENT_ID=jenkins-placeholder
+GOOGLE_CLIENT_SECRET=jenkins-placeholder
 GOOGLE_CLIENT_SCOPE=profile,email
 STOCKPRO_FRONTEND_OAUTH2_SUCCESS_URL=http://localhost:4200/oauth2/callback
 STOCKPRO_OTP_EXPIRY_MINUTES=10
@@ -257,8 +185,8 @@ STOCKPRO_OTP_EXPIRY_MINUTES=10
 STOCKPRO_MAIL_ENABLED=true
 SPRING_MAIL_HOST=smtp.gmail.com
 SPRING_MAIL_PORT=587
-STOCKPRO_MAIL_USERNAME=${params.STOCKPRO_MAIL_USERNAME}
-STOCKPRO_MAIL_PASSWORD=${params.STOCKPRO_MAIL_PASSWORD}
+STOCKPRO_MAIL_USERNAME=jenkins@example.com
+STOCKPRO_MAIL_PASSWORD=jenkins-placeholder
 SPRING_MAIL_SMTP_AUTH=true
 SPRING_MAIL_SMTP_STARTTLS_ENABLE=true
 SPRING_MAIL_SMTP_STARTTLS_REQUIRED=true
@@ -280,7 +208,7 @@ ANALYTICS_EXCHANGE=stockpro.exchange
 
 STOCKPRO_INTERNAL_SERVICE_TOKEN=stockpro-internal-token
 STOCKPRO_ALERT_LOW_STOCK_THRESHOLD=20
-STOCKPRO_ALERT_EMAIL_TO=${params.STOCKPRO_ALERT_EMAIL_TO}
+STOCKPRO_ALERT_EMAIL_TO=jenkins@example.com
 STOCKPRO_FRONTEND_DASHBOARD_URL=http://localhost:4200/dashboard
 
 PAYMENT_SERVICE_BASE_URL=http://payment-service:8089/api/v1/payments
@@ -291,8 +219,8 @@ WAREHOUSE_SERVICE_BASE_URL=http://warehouse-service:8083/api/v1/warehouses
 FEIGN_CLIENT_CONFIG_DEFAULT_CONNECT_TIMEOUT=5000
 FEIGN_CLIENT_CONFIG_DEFAULT_READ_TIMEOUT=5000
 
-RAZORPAY_KEY_ID=${params.RAZORPAY_KEY_ID}
-RAZORPAY_KEY_SECRET=${params.RAZORPAY_KEY_SECRET}
+RAZORPAY_KEY_ID=jenkins-placeholder
+RAZORPAY_KEY_SECRET=jenkins-placeholder
 
 SPRING_CACHE_TYPE=simple
 SPRING_DATA_REDIS_HOST=localhost
