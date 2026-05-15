@@ -106,6 +106,46 @@ pipeline {
             defaultValue: '',
             description: 'AWS RDS password. Required for deploy actions.'
         )
+        password(
+            name: 'JWT_SECRET',
+            defaultValue: '',
+            description: 'JWT signing secret for generated runtime .env.'
+        )
+        string(
+            name: 'GOOGLE_CLIENT_ID',
+            defaultValue: '',
+            description: 'Google OAuth client ID for generated runtime .env.'
+        )
+        password(
+            name: 'GOOGLE_CLIENT_SECRET',
+            defaultValue: '',
+            description: 'Google OAuth client secret for generated runtime .env.'
+        )
+        string(
+            name: 'STOCKPRO_MAIL_USERNAME',
+            defaultValue: '',
+            description: 'SMTP username for generated runtime .env.'
+        )
+        password(
+            name: 'STOCKPRO_MAIL_PASSWORD',
+            defaultValue: '',
+            description: 'SMTP app password for generated runtime .env.'
+        )
+        string(
+            name: 'STOCKPRO_ALERT_EMAIL_TO',
+            defaultValue: '',
+            description: 'Alert notification email recipient for generated runtime .env.'
+        )
+        string(
+            name: 'RAZORPAY_KEY_ID',
+            defaultValue: '',
+            description: 'Razorpay key ID for generated runtime .env.'
+        )
+        password(
+            name: 'RAZORPAY_KEY_SECRET',
+            defaultValue: '',
+            description: 'Razorpay key secret for generated runtime .env.'
+        )
         booleanParam(
             name: 'RUN_TESTS',
             defaultValue: false,
@@ -170,15 +210,105 @@ RDS_USERNAME=${env.RDS_USERNAME_VALUE}
 RDS_PASSWORD=${env.RDS_PASSWORD_VALUE}
 MYSQL_ROOT_PASSWORD=${env.RDS_PASSWORD_VALUE}
 MYSQL_DATABASE=auth_db
+
+JWT_SECRET=${params.JWT_SECRET}
+JWT_EXPIRATION=28800000
+
+SERVER_FORWARD_HEADERS_STRATEGY=framework
+SERVER_TOMCAT_THREADS_MAX=50
+SERVER_TOMCAT_THREADS_MIN_SPARE=5
+
+SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.MySQLDialect
+SPRING_JPA_HIBERNATE_DDL_AUTO=update
+SPRING_JPA_SHOW_SQL=true
+SPRING_JPA_GENERATE_DDL=true
+SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.MySQLDialect
+SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL=true
+
+EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+EUREKA_CLIENT_FETCH_REGISTRY=true
+EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+
+MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=*
+MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=always
+MANAGEMENT_ENDPOINT_SHUTDOWN_ENABLED=true
+MANAGEMENT_ENDPOINTS_WEB_BASE_PATH=/actuator
+MANAGEMENT_HEALTH_MAIL_ENABLED=false
+
+INFO_APP_NAME=StockPro Service
+INFO_APP_VERSION=1.0
+INFO_APP_DESCRIPTION=StockPro microservice
+
+SPRINGDOC_API_DOCS_PATH=/v3/api-docs
+SPRINGDOC_SWAGGER_UI_PATH=/swagger-ui.html
+SPRINGDOC_SWAGGER_UI_ENABLED=true
+
+GOOGLE_CLIENT_ID=${params.GOOGLE_CLIENT_ID}
+GOOGLE_CLIENT_SECRET=${params.GOOGLE_CLIENT_SECRET}
+GOOGLE_CLIENT_SCOPE=profile,email
+STOCKPRO_FRONTEND_OAUTH2_SUCCESS_URL=http://localhost:4200/oauth2/callback
+STOCKPRO_OTP_EXPIRY_MINUTES=10
+
+STOCKPRO_MAIL_ENABLED=true
+SPRING_MAIL_HOST=smtp.gmail.com
+SPRING_MAIL_PORT=587
+STOCKPRO_MAIL_USERNAME=${params.STOCKPRO_MAIL_USERNAME}
+STOCKPRO_MAIL_PASSWORD=${params.STOCKPRO_MAIL_PASSWORD}
+SPRING_MAIL_SMTP_AUTH=true
+SPRING_MAIL_SMTP_STARTTLS_ENABLE=true
+SPRING_MAIL_SMTP_STARTTLS_REQUIRED=true
+SPRING_MAIL_SMTP_SSL_TRUST=smtp.gmail.com
+SPRING_MAIL_SMTP_CONNECTION_TIMEOUT=5000
+SPRING_MAIL_SMTP_TIMEOUT=5000
+SPRING_MAIL_SMTP_WRITE_TIMEOUT=5000
+
+SPRING_RABBITMQ_HOST=rabbitmq
+SPRING_RABBITMQ_PORT=5672
+SPRING_RABBITMQ_USERNAME=guest
+SPRING_RABBITMQ_PASSWORD=guest
+SPRING_RABBITMQ_LISTENER_SIMPLE_MISSING_QUEUES_FATAL=false
+SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_ENABLED=true
+SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_INITIAL_INTERVAL=3000
+SPRING_RABBITMQ_LISTENER_SIMPLE_RETRY_MAX_ATTEMPTS=5
+
+STOCKPRO_INTERNAL_SERVICE_TOKEN=stockpro-internal-token
+STOCKPRO_ALERT_LOW_STOCK_THRESHOLD=20
+STOCKPRO_ALERT_EMAIL_TO=${params.STOCKPRO_ALERT_EMAIL_TO}
+STOCKPRO_FRONTEND_DASHBOARD_URL=http://localhost:4200/dashboard
+
+PAYMENT_SERVICE_BASE_URL=http://payment-service:8089/api/v1/payments
+PURCHASE_SERVICE_BASE_URL=http://purchase-service:8084/api/v1/purchase-orders
+PURCHASE_NOTIFY_ENABLED=true
+WAREHOUSE_SERVICE_BASE_URL=http://warehouse-service:8083/api/v1/warehouses
+
+FEIGN_CLIENT_CONFIG_DEFAULT_CONNECT_TIMEOUT=5000
+FEIGN_CLIENT_CONFIG_DEFAULT_READ_TIMEOUT=5000
+
+RAZORPAY_KEY_ID=${params.RAZORPAY_KEY_ID}
+RAZORPAY_KEY_SECRET=${params.RAZORPAY_KEY_SECRET}
+
+SPRING_CACHE_TYPE=simple
+SPRING_DATA_REDIS_HOST=localhost
+SPRING_DATA_REDIS_PORT=6379
+SPRING_DATA_REDIS_TIMEOUT=2s
+STOCKPRO_CACHE_PRODUCT_TTL_MINUTES=30
+STOCKPRO_CACHE_SUPPLIER_TTL_MINUTES=30
+
+GATEWAY_CORS_ALLOWED_ORIGIN_1=http://localhost:4200
+GATEWAY_CORS_ALLOWED_ORIGIN_2=http://localhost:4201
+GATEWAY_ROUTE_AUTH_URI=lb://AUTHSERVICE
+GATEWAY_ROUTE_PRODUCT_URI=lb://PRODUCT-SERVICE
+GATEWAY_ROUTE_WAREHOUSE_URI=lb://WAREHOUSE-SERVICE
+GATEWAY_ROUTE_SUPPLIER_URI=lb://SUPPLIER-SERVICE
+GATEWAY_ROUTE_MOVEMENT_URI=lb://stockmovement-services
+GATEWAY_ROUTE_PURCHASE_URI=lb://purchase-service
+GATEWAY_ROUTE_PAYMENT_URI=lb://payment-service
+GATEWAY_ROUTE_ANALYTICS_URI=lb://analytics-service
+GATEWAY_ROUTE_ALERT_URI=lb://ALERT-SERVICE
 """
                     )
-
-                    serviceDirectories().each { service ->
-                        def envFile = "${service}/.env"
-                        if (!fileExists(envFile)) {
-                            writeFile(file: envFile, text: "# Generated by Jenkins for Docker Compose env_file compatibility.\n")
-                        }
-                    }
                 }
             }
         }

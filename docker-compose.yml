@@ -68,7 +68,6 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.60
     networks:
       - stockpro-network
     healthcheck:
@@ -106,7 +105,12 @@ services:
     container_name: stockpro-eureka
     restart: unless-stopped
     env_file:
-      - ./eureka-service/.env
+      - ./.env
+    environment:
+      - SPRING_APPLICATION_NAME=eureka-service
+      - SERVER_PORT=8761
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
     ports:
       - "8761:8761"
     networks:
@@ -127,10 +131,12 @@ services:
     container_name: stockpro-auth
     restart: unless-stopped
     env_file:
-      - ./authservice/.env
+      - ./.env
     ports:
       - "8081:8081"
     environment:
+      - SPRING_APPLICATION_NAME=authservice
+      - SERVER_PORT=8081
       - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
@@ -152,10 +158,12 @@ services:
     container_name: stockpro-product
     restart: unless-stopped
     env_file:
-      - ./product-service/.env
+      - ./.env
     ports:
       - "8082:8082"
     environment:
+      - SPRING_APPLICATION_NAME=product-service
+      - SERVER_PORT=8082
       - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_product?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
@@ -176,10 +184,12 @@ services:
     container_name: stockpro-warehouse
     restart: unless-stopped
     env_file:
-      - ./warehouse-service/.env
+      - ./.env
     ports:
       - "8083:8083"
     environment:
+      - SPRING_APPLICATION_NAME=warehouse-service
+      - SERVER_PORT=8083
       - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_warehouse_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
@@ -200,10 +210,12 @@ services:
     container_name: stockpro-purchase
     restart: unless-stopped
     env_file:
-      - ./purchase-service/.env
+      - ./.env
     ports:
       - "8084:8084"
     environment:
+      - SPRING_APPLICATION_NAME=purchase-service
+      - SERVER_PORT=8084
       - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_purchase_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
@@ -230,10 +242,12 @@ services:
     container_name: stockpro-payment
     restart: unless-stopped
     env_file:
-      - ./payment-service/.env
+      - ./.env
     ports:
       - "8089:8089"
     environment:
+      - SPRING_APPLICATION_NAME=payment-service
+      - SERVER_PORT=8089
       - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_payment_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
@@ -258,10 +272,12 @@ services:
     container_name: stockpro-supplier
     restart: unless-stopped
     env_file:
-      - ./supplier-service/.env
+      - ./.env
     ports:
       - "8085:8085"
     environment:
+      - SPRING_APPLICATION_NAME=supplier-service
+      - SERVER_PORT=8085
       - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_supplier?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
@@ -282,10 +298,12 @@ services:
     container_name: stockpro-movement
     restart: unless-stopped
     env_file:
-      - ./stockmovement-services/.env
+      - ./.env
     ports:
       - "8086:8086"
     environment:
+      - SPRING_APPLICATION_NAME=stockmovement-services
+      - SERVER_PORT=8086
       - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_movements?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
@@ -294,7 +312,7 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
-      - STOCKPRO_ALERT_EMAIL_TO=vksingh1062003@gmail.com
+      - STOCKPRO_ALERT_EMAIL_TO=${STOCKPRO_ALERT_EMAIL_TO}
       - STOCKPRO_INTERNAL_SERVICE_TOKEN=stockpro-internal-token
       - PAYMENT_SERVICE_BASE_URL=http://payment-service:8089/api/v1/payments
       - SERVER_TOMCAT_THREADS_MAX=50
@@ -313,10 +331,12 @@ services:
     container_name: stockpro-analytics
     restart: unless-stopped
     env_file:
-      - ./analytics-service/.env
+      - ./.env
     ports:
       - "8087:8087"
     environment:
+      - SPRING_APPLICATION_NAME=analytics-service
+      - SERVER_PORT=8087
       - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_analytics_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
@@ -337,10 +357,12 @@ services:
     container_name: stockpro-alert
     restart: unless-stopped
     env_file:
-      - ./alert-service/.env
+      - ./.env
     ports:
       - "8088:8088"
     environment:
+      - SPRING_APPLICATION_NAME=alert-service
+      - SERVER_PORT=8088
       - SPRING_DATASOURCE_URL=jdbc:mysql://${RDS_ENDPOINT}:${RDS_PORT:-3306}/stockpro_alert_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=${RDS_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${RDS_PASSWORD}
@@ -369,10 +391,12 @@ services:
     container_name: stockpro-gateway
     restart: unless-stopped
     env_file:
-      - ./api-gateway/.env
+      - ./.env
     ports:
       - "8080:8080"
     environment:
+      - SPRING_APPLICATION_NAME=gateway-service
+      - SERVER_PORT=8080
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
     depends_on:
       eureka-service:
