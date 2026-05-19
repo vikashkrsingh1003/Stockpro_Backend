@@ -14,7 +14,7 @@ public interface ProductClient {
     @GetMapping("/api/v1/products/{id}")
     ProductDTO getProductById(@PathVariable("id") Long id);
 
-    // 🔥 Called by Warehouse Service to sync live stock into Product Service
+    //  Called by Warehouse Service to sync live stock into Product Service
     @PutMapping("/api/v1/products/{id}/stock")
     void updateTotalStock(@PathVariable("id") Long productId, @RequestParam("total") Integer total);
 }

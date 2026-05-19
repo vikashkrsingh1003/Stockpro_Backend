@@ -24,7 +24,7 @@ public class StockLevel {
     private Integer reservedQuantity = 0;
     
     private Integer minThreshold = 25;
-    private Integer maxStockLevel = 1000; // PDF §2.7: Overstock alert threshold
+    private Integer maxStockLevel = 1000; //  Overstock alert threshold
 
     private String location; // bin / aisle
 

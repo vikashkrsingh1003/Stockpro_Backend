@@ -51,7 +51,7 @@ public class PurchaseOrder {
 
     private LocalDateTime paidAt;
 
-    // 🔥 Relationship with Line Items
+    //  Relationship with Line Items
     @OneToMany(mappedBy = "purchaseOrder",
             cascade = CascadeType.ALL,
             orphanRemoval = true)

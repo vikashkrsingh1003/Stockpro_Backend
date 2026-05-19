@@ -16,7 +16,7 @@ public class RabbitMQConfig {
     // Routing key for stock movement events
     public static final String STOCK_MOVEMENT_ROUTING_KEY = "stock.movement";
 
-    // 🔔 Alert routing keys — consumed by alert-service (PDF §2.7)
+    //  Alert routing keys — consumed by alert-service (PDF §2.7)
     public static final String STOCK_LOW_ROUTING_KEY  = "stock.low";
     public static final String STOCK_HIGH_ROUTING_KEY = "stock.high";
 

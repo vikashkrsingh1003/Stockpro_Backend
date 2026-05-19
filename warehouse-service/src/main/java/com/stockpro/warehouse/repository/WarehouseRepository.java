@@ -8,15 +8,15 @@ import java.util.Optional;
 
 public interface WarehouseRepository extends JpaRepository<Warehouse, Long> {
 
-    // 🔍 Get only active warehouses
+    //  Get only active warehouses
     List<Warehouse> findByIsActive(Boolean isActive);
 
-    // 🔍 Search by location
+    //  Search by location
     List<Warehouse> findByLocation(String location);
 
-    // 🔍 Get warehouses by manager
+    //  Get warehouses by manager
     List<Warehouse> findByManagerId(Long managerId);
 
-    // 🔍 Find by name
+    //  Find by name
     Optional<Warehouse> findByName(String name);
 }

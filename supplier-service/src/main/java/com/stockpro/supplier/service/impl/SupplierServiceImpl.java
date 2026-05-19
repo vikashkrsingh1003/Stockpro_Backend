@@ -44,7 +44,7 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     // Search by name OR city OR country — uses custom @Query in repository
-    // PDF §2.4: "Search suppliers by name, city, or country"
+    //  "Search suppliers by name, city, or country"
     @Override
     @Cacheable(value = "suppliersSearch", key = "#query == null ? 'all' : #query.trim().toLowerCase()", unless = "#result == null")
     public List<Supplier> searchSuppliers(String query) {
@@ -71,7 +71,7 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     // Soft delete — sets isActive=false
-    // PDF §4.5: "prevents new POs but preserves historical records"
+    //  "prevents new POs but preserves historical records"
     @Override
     public void deactivateSupplier(Long id) {
         Supplier s = getById(id);
@@ -81,7 +81,7 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     // Hard delete — Admin only (enforced by @PreAuthorize in controller)
-    // 📌 NOTE: Using standard JpaRepository.deleteById() instead of
+    //  Using standard JpaRepository.deleteById() instead of
     // deleteBySupplierId() to avoid @Transactional issues with derived delete queries
     @Override
     public void deleteSupplier(Long id) {
@@ -105,7 +105,7 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     // Update supplier performance rating
-    // 📌 NOTE: PDF §2.4 says "Rate supplier performance after goods receipt"
+    // says "Rate supplier performance after goods receipt"
     // Called by the Purchase Order service after a GRN (Goods Received Note) is recorded.
     // Sets the rating directly — the Purchase Order service calculates the score before calling this.
     @Override

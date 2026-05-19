@@ -19,10 +19,10 @@ public interface SupplierRepository extends JpaRepository<Supplier, Long> {
 
     Optional<Supplier> findByTaxId(String taxId);
 
-    // 📌 NOTE: PDF names this method 'searchByName()' but Spring Data JPA
+    // Requirement:  but Spring Data JPA
     // cannot auto-derive a query for searching across MULTIPLE fields (name, city, country).
     // So we use a custom @Query here. The method name matches PDF exactly.
-    // PDF §2.4: "Search suppliers by name, city, or country"
+    //  "Search suppliers by name, city, or country"
     @Query("SELECT s FROM Supplier s WHERE " +
            "LOWER(s.name)    LIKE LOWER(CONCAT('%', :name, '%')) OR " +
            "LOWER(s.city)    LIKE LOWER(CONCAT('%', :name, '%')) OR " +
@@ -31,7 +31,6 @@ public interface SupplierRepository extends JpaRepository<Supplier, Long> {
 
     Long countByIsActive(Boolean isActive);
 
-    // PDF names this 'deleteBySupplied()' — likely a typo for deleteBySupplierId()
-    // Kept as deleteBySupplierId to match intent
+
     void deleteBySupplierId(Long supplierId);
-}
+}

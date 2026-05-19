@@ -46,12 +46,13 @@ public class AlertServiceImpl implements AlertService {
 
     @Override
     public Alert createAlert(AlertType type, AlertSeverity severity,
-                             String title, String message,
-                             Long productId, Long warehouseId, Long poId) {
+            String title, String message,
+            Long productId, Long warehouseId, Long poId) {
 
-        // Deduplication: don't create duplicate active alerts for the same product + type
+        // Deduplication: don't create duplicate active alerts for the same product +
+        // type
         if (productId != null &&
-            repo.existsByProductIdAndWarehouseIdAndAlertTypeAndAcknowledgedFalse(productId, warehouseId, type)) {
+                repo.existsByProductIdAndWarehouseIdAndAlertTypeAndAcknowledgedFalse(productId, warehouseId, type)) {
             log.info(" Duplicate alert suppressed for product {} warehouse {} type {}", productId, warehouseId, type);
             return null;
         }
@@ -75,7 +76,7 @@ public class AlertServiceImpl implements AlertService {
         Alert saved = repo.save(alert);
         log.info(" Alert created: [{}] {} - {}", severity, title, displayMessage);
 
-        //  PDF 2.7: Send email only for CRITICAL alerts
+        // PDF 2.7: Send email only for CRITICAL alerts
         if (severity == AlertSeverity.CRITICAL) {
             sendEmail(title, displayMessage);
         }
@@ -107,7 +108,7 @@ public class AlertServiceImpl implements AlertService {
             return repo.findBySeverity(alertSeverity);
         } else if (acknowledged != null) {
             return repo.findByAcknowledged(acknowledged);
-        }
+       }
 
         return repo.findAll();
     }
@@ -138,7 +139,7 @@ public class AlertServiceImpl implements AlertService {
         return repo.save(alert);
     }
 
-    //  Email sender — only called for CRITICAL alerts (PDF 2.7)
+    // Email sender — only called for CRITICAL alerts (PDF 2.7)
     private void sendEmail(String subject, String body) {
         List<String> recipients = resolveAlertRecipients();
         if (recipients.isEmpty()) {
@@ -260,7 +261,8 @@ public class AlertServiceImpl implements AlertService {
                     </table>
                   </body>
                 </html>
-                """.formatted(safeSubject, safeBody, generatedAt, escapeHtml(dashboardUrl));
+                """
+                .formatted(safeSubject, safeBody, generatedAt, escapeHtml(dashboardUrl));
     }
 
     private String buildDisplayMessage(AlertType type, String fallbackMessage, Long productId, Long warehouseId) {

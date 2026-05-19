@@ -21,8 +21,8 @@ public class StockMovement {
 
     private Integer quantity; //  Amount changed (+ or -)
 
-    private Double unitCost;        // PDF §2.6: Cost per unit at time of movement
-    private Integer balanceAfter;   // PDF §2.6: Stock balance after this movement
+    private Double unitCost;     //Cost per unit at time of movement
+    private Integer balanceAfter;   // Stock balance after this movement
     private String referenceNumber; // PO number / Sales Order / Issue Order
     
     @Enumerated(EnumType.STRING)

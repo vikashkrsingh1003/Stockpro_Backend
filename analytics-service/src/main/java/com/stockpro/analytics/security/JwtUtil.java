@@ -15,7 +15,7 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secret;
 
-    // ✅ Same key derivation as auth-service: raw bytes → HmacSHA key
+    // Same key derivation as auth-service: raw bytes → HmacSHA key
     // Using setSigningKey(String) in JJWT 0.11.x treats the string as Base64,
     // which causes a signature mismatch with tokens signed using raw bytes.
     private Key getSignKey() {

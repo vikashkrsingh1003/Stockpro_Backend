@@ -44,7 +44,7 @@ public class Product {
 
     private String barcode;
     
-    private Integer totalStock = 0; //  Added for RabbitMQ syncing
+    private Integer totalStock = 0; 
 
     private Boolean isActive = true;
 }

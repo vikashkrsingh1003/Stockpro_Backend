@@ -158,7 +158,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
                 po.getWarehouseId(),
                 productId,
                 qtyToReceive,
-                "PO Receipt: " + po.getReferenceNumber() // 🔥 Linked Reason
+                "PO Receipt: " + po.getReferenceNumber() // 
         );
 
         //  Check overall PO status

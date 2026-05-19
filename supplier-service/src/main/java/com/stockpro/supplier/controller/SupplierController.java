@@ -77,7 +77,7 @@ public class SupplierController {
     @PutMapping("/{id}/deactivate")
     public String deactivate(@PathVariable Long id) {
         supplierService.deactivateSupplier(id);
-        return "Supplier deactivated ✅";
+        return "Supplier deactivated ";
     }
 
     // PUT /suppliers/{id}/rating?score= — update performance rating after GRN
@@ -96,6 +96,6 @@ public class SupplierController {
     @DeleteMapping("/{id}")
     public String delete(@PathVariable Long id) {
         supplierService.deleteSupplier(id);
-        return "Supplier deleted ✅";
+        return "Supplier deleted ";
     }
 }

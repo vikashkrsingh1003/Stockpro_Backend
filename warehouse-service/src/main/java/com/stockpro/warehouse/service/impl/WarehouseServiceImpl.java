@@ -31,9 +31,9 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     private final WarehouseRepository warehouseRepo;
     private final StockLevelRepository stockRepo;
-    private final MovementClient movementClient;   // 🔥 Feign → stockmovement-service
+    private final MovementClient movementClient;   //  Feign → stockmovement-service
     private final ProductClient productClient;
-    private final StockEventPublisher stockEventPublisher; // 📡 RabbitMQ Publisher (non-critical)
+    private final StockEventPublisher stockEventPublisher; // RabbitMQ Publisher (non-critical)
 
     @Value("${stockpro.alert.low-stock-threshold:20}")
     private int lowStockThreshold;
@@ -53,7 +53,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Override
     public Warehouse createWarehouse(Warehouse warehouse) {
         warehouse.setIsActive(true);
-        warehouse.setUsedCapacity(0); // 🔥 Initialize at 0
+        warehouse.setUsedCapacity(0); //  Initialize at 0
         return warehouseRepo.save(warehouse);
     }
 
@@ -138,7 +138,7 @@ public class WarehouseServiceImpl implements WarehouseService {
         int currentUsedCapacity = (warehouse.getUsedCapacity() != null) ? warehouse.getUsedCapacity() : 0;
         int maxCapacity = (warehouse.getCapacity() != null) ? warehouse.getCapacity() : Integer.MAX_VALUE;
         if (currentUsedCapacity + delta > maxCapacity) {
-            throw new RuntimeException("Warehouse capacity exceeded! 🛑 Max: " + maxCapacity);
+            throw new RuntimeException("Warehouse capacity exceeded!  Max: " + maxCapacity);
         }
 
         // 4. Update Stock
@@ -154,7 +154,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         // 6. Record Movement
         MovementType movementType = (delta >= 0) ? MovementType.IN : MovementType.OUT;
-        recordMovement(warehouseId, productId, Math.abs(delta), movementType, reason); // 🔥 Using dynamic reason
+        recordMovement(warehouseId, productId, Math.abs(delta), movementType, reason); // Using dynamic reason
 
         StockLevel savedStock = stockRepo.save(stock);
 
@@ -496,7 +496,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     // ─────────────────────────────────────────────────────────────
     // STOCK ISSUE — Consumption (Sales / Production / Internal Use)
-    // PDF §2.2: "Record stock issues/consumption for production, sales, or internal use"
+    //  "Record stock issues/consumption for production, sales, or internal use"
     // ─────────────────────────────────────────────────────────────
     @Override
     public StockLevel issueStock(StockIssueRequest request) {
@@ -558,7 +558,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // STOCK WRITE-OFF — Damaged / Expired goods (PDF §2.6)
+    // STOCK WRITE-OFF — Damaged / Expired goods 
     // ─────────────────────────────────────────────────────────────
     @Override
     public StockLevel writeOffStock(StockWriteOffRequest request) {
@@ -602,7 +602,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // STOCK RETURN — Supplier or Customer Return (PDF §2.6)
+    // STOCK RETURN — Supplier or Customer Return 
     // ─────────────────────────────────────────────────────────────
     @Override
     public StockLevel returnStock(StockReturnRequest request) {

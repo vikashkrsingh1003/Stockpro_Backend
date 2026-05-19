@@ -34,7 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = null;
         String username = null;
 
-        // 🔥 Extract token
+        //  Extract token
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
             try {
@@ -44,7 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        // 🔥 Validate & set authentication
+        //  Validate & set authentication
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             var userDetails = userDetailsService.loadUserByUsername(username);

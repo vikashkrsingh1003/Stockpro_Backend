@@ -30,7 +30,7 @@ public class JwtUtil {
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
         
-        //  This is the critical line!
+       
         claims.put("role", user.getRole().name()); 
 
         return Jwts.builder()
@@ -88,4 +88,4 @@ public class JwtUtil {
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
-}
+}

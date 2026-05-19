@@ -14,19 +14,19 @@ import java.util.Optional;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    // 🔍 Find by SKU (unique + active)
+    // Find by SKU (unique + active)
     Optional<Product> findBySkuAndIsActiveTrue(String sku);
 
-    // 🔍 Find by ID (active only)
+    //  Find by ID (active only)
     Optional<Product> findByProductIdAndIsActiveTrue(Long productId);
 
-    // 🔍 Filter by category (active only)
+    //  Filter by category (active only)
     List<Product> findByCategoryAndIsActiveTrue(String category);
 
-    // 🔍 Filter by brand (active only)
+    //  Filter by brand (active only)
     List<Product> findByBrandAndIsActiveTrue(String brand);
 
-    // 🔍 Search by name (active only)
+    //  Search by name (active only)
     List<Product> findByNameContainingIgnoreCaseAndIsActiveTrue(String name);
 
     @Query("""
@@ -43,13 +43,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     """)
     List<Product> filterActiveProducts(@Param("query") String query, @Param("category") String category);
 
-    // 🔍 Get all active products (paginated)
+    //  Get all active products (paginated)
     Page<Product> findByIsActiveTrue(Pageable pageable);
 
-    // 🔍 Get all active products (no pagination — for internal Feign calls)
+    //  Get all active products (no pagination — for internal Feign calls)
     List<Product> findByIsActiveTrue();
 
-    // 🔍 Barcode lookup (active only)
+    //  Barcode lookup (active only)
     Optional<Product> findByBarcodeAndIsActiveTrue(String barcode);
 
     //  Count products by category (active only)

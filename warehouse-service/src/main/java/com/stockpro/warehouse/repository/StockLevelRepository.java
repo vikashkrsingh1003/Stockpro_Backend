@@ -9,13 +9,13 @@ import java.util.Optional;
 
 public interface StockLevelRepository extends JpaRepository<StockLevel, Long> {
 
-    // 🔥 Core query (MOST USED)
+    //  Core query (MOST USED)
     Optional<StockLevel> findByWarehouseIdAndProductId(Long warehouseId, Long productId);
 
-    // 📦 All stock in a warehouse
+    //  All stock in a warehouse
     List<StockLevel> findByWarehouseId(Long warehouseId);
 
-    // 📦 Product across all warehouses
+    //  Product across all warehouses
     List<StockLevel> findByProductId(Long productId);
     
     

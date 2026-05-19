@@ -27,7 +27,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 true,
                 true,
                 true,
-                List.of(() -> "ROLE_" + user.getRole().name()) // 🔥 IMPORTANT
+                List.of(() -> "ROLE_" + user.getRole().name())
         );
     }
 }

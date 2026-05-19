@@ -41,7 +41,6 @@ public class User {
 
     private String department;
 
-    // FIX: Use 'active' not 'isActive' to avoid Lombok boolean naming conflict
     // Lombok generates: isActive() getter + setActive() setter correctly from 'active'
     @Column(name = "is_active", nullable = false)
     private boolean active = true;

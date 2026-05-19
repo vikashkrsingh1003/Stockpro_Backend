@@ -30,7 +30,7 @@ public class POLineItem {
 
     private Double totalCost;
 
-    // 🔥 ManyToOne mapping
+    // ManyToOne mapping
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "purchase_order_id")
     @com.fasterxml.jackson.annotation.JsonIgnore

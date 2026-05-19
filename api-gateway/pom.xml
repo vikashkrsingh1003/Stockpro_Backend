@@ -64,7 +64,7 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- 📚 Swagger Aggregation -->
+		<!--  Swagger Aggregation -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webflux-ui</artifactId>

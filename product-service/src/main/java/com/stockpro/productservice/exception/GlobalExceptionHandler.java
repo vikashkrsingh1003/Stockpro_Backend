@@ -21,7 +21,7 @@ public class GlobalExceptionHandler {
                 .body(Map.of("message", ex.getMessage()));
     }
 
-    // 🔥 Added handler for Validation Errors (@Valid)
+    //  Added handler for Validation Errors (@Valid)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();

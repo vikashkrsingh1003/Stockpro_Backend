@@ -68,8 +68,8 @@ class SupplierControllerTest {
         assertSame(supplier, controller.create(supplier));
         assertSame(supplier, controller.update(1L, supplier));
         assertSame(supplier, controller.updateRating(1L, 4.5));
-        assertEquals("Supplier deactivated ✅", controller.deactivate(1L));
-        assertEquals("Supplier deleted ✅", controller.delete(1L));
+        assertEquals("Supplier deactivated ", controller.deactivate(1L));
+        assertEquals("Supplier deleted ", controller.delete(1L));
 
         verify(supplierService).deactivateSupplier(1L);
         verify(supplierService).deleteSupplier(1L);

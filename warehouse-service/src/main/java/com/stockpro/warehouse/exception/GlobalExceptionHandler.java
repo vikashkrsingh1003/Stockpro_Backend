@@ -15,7 +15,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException ex) {
         Map<String, String> error = new HashMap<>();
         error.put("error", ex.getMessage());
-        error.put("message", ex.getMessage()); // 🔥 More visible in some JSON viewers
+        error.put("message", ex.getMessage()); //  More visible in some JSON viewers
         error.put("status", "400");
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }

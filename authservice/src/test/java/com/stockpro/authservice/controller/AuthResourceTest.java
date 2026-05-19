@@ -47,25 +47,6 @@ class AuthResourceTest {
         assertSame(response, controller.register(request).getBody());
     }
 
-//    @Test
-//    void otpEndpointsDelegateToService() {
-//        RegisterRequest registerRequest = new RegisterRequest();
-//        registerRequest.setEmail("new@test.com");
-//        EmailRequest emailRequest = new EmailRequest();
-//        emailRequest.setEmail("user@test.com");
-//        ForgotPasswordResetRequest resetRequest = new ForgotPasswordResetRequest();
-//        resetRequest.setEmail("user@test.com");
-//        resetRequest.setOtp("123456");
-//        resetRequest.setNewPassword("new");
-//
-//        assertEquals("OTP sent to email", controller.sendRegistrationOtp(registerRequest).getBody());
-//        assertEquals("OTP sent to email", controller.sendForgotPasswordOtp(emailRequest).getBody());
-//        assertEquals("Password reset successfully", controller.resetForgotPassword(resetRequest).getBody());
-//
-//        verify(authService).sendRegistrationOtp(registerRequest);
-//        verify(authService).sendForgotPasswordOtp("user@test.com");
-//        verify(authService).resetPasswordWithOtp("user@test.com", "123456", "new");
-//    }
 
     @Test
     void login_returnsAuthResponse() {
